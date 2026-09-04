@@ -1,7 +1,10 @@
 name: Build Job
 on: 
-  push:
-    branches: 
+  #push:
+   # branches: 
+    #  - main
+  pull_request:
+    branches:
       - main
 
 jobs:
@@ -10,6 +13,8 @@ jobs:
     steps:
       - name: Code checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Maven Build
         run: mvn install
@@ -20,7 +25,9 @@ jobs:
     needs: Build
     steps:
       - name: Code checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Run tests on main branch
         run: mvn test
