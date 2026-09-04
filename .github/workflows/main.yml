@@ -6,6 +6,10 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+
+  schedule:
+    - cron: '30 12 * * *' # Runs every day at midnight
 
 jobs:
   Build:
