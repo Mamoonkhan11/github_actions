@@ -1,5 +1,5 @@
 FROM maven:3.9.9-eclipse-temurin-21-jammy AS BUILD_IMAGE
-copy ./app
+copy . /app
 WORKDIR /app
 RUN mvn clean install
 FROM tomcat:10-jdk21
