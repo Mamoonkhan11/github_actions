@@ -1,15 +1,15 @@
 name: Build Job
 on: 
-  #push:
-   # branches: 
-    #  - main
-  pull_request:
-    branches:
+  push:
+    branches: 
       - main
-  workflow_dispatch:
+  #pull_request:
+    #branches:
+   #   - main
+  #workflow_dispatch:
 
-  schedule:
-    - cron: '30 12 * * *' # Runs every day at midnight
+  #schedule:
+   # - cron: '30 12 * * *' # Runs every day at midnight
 permissions:
   contents: read
 
@@ -46,7 +46,13 @@ jobs:
           fetch-depth: 0
 
       - name: Run tests on main branch
+        if: github.ref == 'refs/heads/main'
         run: mvn test
 
       - name: Checkstyle
+        if: github.ref == 'refs/heads/main'
         run: mvn checkstyle:checkstyle
+
+      - name: Test skipped
+        if: github.ref != 'refs/heads/main'
+        run: echo "Tests are skipped for non-main branches."
