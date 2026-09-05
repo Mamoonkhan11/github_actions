@@ -10,6 +10,8 @@ on:
 
   schedule:
     - cron: '30 12 * * *' # Runs every day at midnight
+permissions:
+  contents: read
 
 jobs:
   Build:
@@ -22,6 +24,16 @@ jobs:
 
       - name: Maven Build
         run: mvn install
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: vprofile
+          path: target/*.war
+
+      - name: Upload test results
+        if: failure()
+        run: echo "Previous step failed, please check logs..."
 
 
   Testing:
