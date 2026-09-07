@@ -115,7 +115,7 @@ jobs:
           out: dependency-check-report
           args: >-
             --enableRetired
-            --failOnCVSS 7
+            --failOnCVSS 3
 
       - name: Upload OWASP report
         if: always()
@@ -161,6 +161,7 @@ jobs:
   Slack-Notification:
     name: Slack Notification
     runs-on: ubuntu-latest
+    environment: production
     needs: [Build, Testing, Security-Scan, Secret-Scan, OWASP-Dependency-Check, Build-and-Publish-Docker-Image]
     if: always()
     steps:
