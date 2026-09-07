@@ -161,6 +161,7 @@ jobs:
   Slack-Notification:
     name: Slack Notification
     runs-on: ubuntu-latest
+    environment: production
     needs: [Build, Testing, Security-Scan, Secret-Scan, OWASP-Dependency-Check, Build-and-Publish-Docker-Image]
     if: failure() || success()
     steps:
