@@ -83,11 +83,53 @@ jobs:
           name: trivy-report
           path: trivy-report.json
 
+  Secret-Scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    needs: Build
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Scan repository for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  OWASP-Dependency-Check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    needs: Build
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v7
+
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: vprofile
+          path: .
+          format: HTML
+          out: dependency-check-report
+          args: >-
+            --enableRetired
+            --failOnCVSS 7
+
+      - name: Upload OWASP report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: owasp-dependency-check-report
+          path: dependency-check-report
+          if-no-files-found: warn
+
   Build-and-Publish-Docker-Image:
     name: Build and Publish Docker Image
     runs-on: ubuntu-latest
     environment: production
-    needs: [Build, Testing, Security-Scan]
+    needs: [Build, Testing, Security-Scan, Secret-Scan, OWASP-Dependency-Check]
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
@@ -116,4 +158,20 @@ jobs:
           docker build -f Docker-files/app/multistage/Dockerfile -t $ECR_REGISTRY/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG .
           docker push $ECR_REGISTRY/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
 
-    
+  Slack-Notification:
+    name: Slack Notification
+    runs-on: ubuntu-latest
+    needs: [Build, Testing, Security-Scan, Secret-Scan, OWASP-Dependency-Check, Build-and-Publish-Docker-Image]
+    if: always()
+    steps:
+      - name: Send workflow result to Slack
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "GitHub Actions: ${{ github.workflow }} - ${{ needs.Build.result == 'success' && needs.Testing.result == 'success' && needs.Security-Scan.result == 'success' && needs.Secret-Scan.result == 'success' && needs.OWASP-Dependency-Check.result == 'success' && (needs.Build-and-Publish-Docker-Image.result == 'success' || needs.Build-and-Publish-Docker-Image.result == 'skipped') && 'succeeded' || 'failed' }}\nRepository: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nCommit: ${{ github.sha }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+
+  
